@@ -204,6 +204,24 @@ The application now provides a stable, user-friendly lead capture experience tha
 
 ---
 
+## ⚠️ Important Note: Supabase Function Limitations
+
+**Since I don't have access to the Supabase account for this project, this is the best I could fix it.**
+
+The Supabase Edge Function (`send-confirmation`) still contains the original bugs that cause the "Cannot read properties of undefined (reading 'replace')" error. While I've implemented comprehensive frontend error handling to gracefully degrade when the function fails, the root cause in the Supabase function itself remains unfixed.
+
+### What this means:
+- ✅ **Form submissions work perfectly** - no data loss
+- ✅ **User experience is smooth** - appropriate feedback provided
+- ✅ **Frontend is robust** - handles all error scenarios gracefully
+- ❌ **Email confirmations may fail** - due to unfixed Supabase function bugs
+- ❌ **Function errors persist** - until someone with Supabase access deploys the fixes
+
+### To fully resolve this:
+Someone with access to the Supabase project (`fwjfenbkcgfgkaijgtsi`) needs to deploy the updated function code from `supabase/functions/send-confirmation/index.ts` to eliminate the email service issues completely.
+
+---
+
 ## How can I edit this code?
 
 There are several ways of editing your application.
