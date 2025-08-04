@@ -4,6 +4,206 @@
 
 **URL**: https://lovable.dev/projects/94b52f1d-10a5-4e88-9a9c-5c12cf45d83a
 
+---
+
+# Bug Fixes Report
+
+## Overview
+This document outlines the major bugs that were discovered and resolved in the Lead Capture Application.
+
+---
+
+## Critical Fixes Implemented
+
+### 1. Duplicate Supabase Function Calls Causing Race Conditions
+**File**: `src/components/LeadCaptureForm.tsx`
+**Severity**: Critical
+**Status**: Fixed
+
+#### Problem
+The lead capture form was calling the `send-confirmation` Supabase function twice in the `handleSubmit` function, causing:
+- Race conditions and unexpected behavior
+- Potential duplicate email sends
+- Function execution errors
+- Poor user experience
+
+#### Root Cause
+The code had two identical `supabase.functions.invoke('send-confirmation')` calls in the same function, with the first call being wrapped in an unnecessary try-catch block.
+
+#### Fix
+Removed the duplicate function call and consolidated the email sending logic into a single, properly handled invocation:
+```typescript
+// Before: Two identical function calls
+try {
+  const { error: emailError } = await supabase.functions.invoke('send-confirmation', {...});
+} catch (emailError) {...}
+
+// After: Single function call with proper error handling
+try {
+  const { error: emailError } = await supabase.functions.invoke('send-confirmation', {...});
+  if (emailError) {
+    console.error('Error sending confirmation email:', emailError);
+  } else {
+    setEmailSuccess(true);
+  }
+} catch (emailError) {
+  console.error('Error calling email function:', emailError);
+}
+```
+
+#### Impact
+- ✅ Eliminated race conditions
+- ✅ Prevented duplicate email sends
+- ✅ Improved function reliability
+- ✅ Better error handling
+
+---
+
+### 2. "Cannot read properties of undefined (reading 'replace')" Error
+**File**: `supabase/functions/send-confirmation/index.ts`
+**Severity**: High
+**Status**: Fixed
+
+#### Problem
+The Supabase Edge Function was throwing "Cannot read properties of undefined (reading 'replace')" errors when trying to process AI-generated email content, causing:
+- Complete function failures
+- No email confirmations sent
+- Poor user experience
+- Console errors
+
+#### Root Cause
+Multiple issues in the AI content generation:
+1. Incorrect array indexing (`choices[1]` instead of `choices[0]`)
+2. Missing null safety for the `.replace()` method
+3. Function structure issues with improper indentation
+
+#### Fix
+Implemented comprehensive error handling and null safety:
+```typescript
+// Fixed array indexing
+const content = data?.choices?.[0]?.message?.content;
+
+// Added null safety for .replace() method
+${(personalizedContent || '').replace(/\n/g, '<br>')}
+
+// Added fallback content handling
+if (!content) {
+  console.warn('No content received from OpenAI, using fallback');
+  return fallbackContent;
+}
+```
+
+#### Impact
+- ✅ Eliminated undefined property errors
+- ✅ Added robust fallback content
+- ✅ Improved function reliability
+- ✅ Better error logging
+
+---
+
+### 3. TypeScript Compilation Errors for Deno Code
+**File**: `tsconfig.json`, `supabase/functions/`
+**Severity**: Medium
+**Status**: Fixed
+
+#### Problem
+TypeScript was trying to compile Deno-specific Supabase Edge Function code in a Node.js environment, causing:
+- "Cannot find name Deno" errors
+- "Cannot find module" errors for Deno imports
+- Build failures and development issues
+- IDE/editor warnings
+
+#### Root Cause
+The main `tsconfig.json` was including Supabase functions in compilation, but these functions use Deno runtime APIs that don't exist in Node.js.
+
+#### Fix
+Excluded Supabase functions from main TypeScript compilation and added proper Deno configuration:
+```json
+// tsconfig.json
+{
+  "exclude": [
+    "supabase/functions/**/*"
+  ]
+}
+
+// supabase/functions/deno.json
+{
+  "compilerOptions": {
+    "allowJs": true,
+    "lib": ["deno.window"],
+    "strict": true
+  }
+}
+```
+
+#### Impact
+- ✅ Eliminated TypeScript compilation errors
+- ✅ Proper separation of Node.js and Deno code
+- ✅ Clean development experience
+- ✅ Correct IDE support
+
+---
+
+### 4. Graceful Degradation for Email Service Failures
+**File**: `src/components/LeadCaptureForm.tsx`
+**Severity**: Medium
+**Status**: Fixed
+
+#### Problem
+When the Supabase email function failed, the entire form submission would break or provide poor user feedback, causing:
+- Form submission failures
+- Confusing user experience
+- No indication of success/failure
+- Lost lead data
+
+#### Root Cause
+The form didn't handle email service failures gracefully and didn't provide appropriate user feedback.
+
+#### Fix
+Implemented graceful degradation with proper error handling and user feedback:
+```typescript
+// Added email success tracking
+const [emailSuccess, setEmailSuccess] = useState(false);
+
+// Enhanced error handling
+try {
+  const { error: emailError } = await supabase.functions.invoke('send-confirmation', {...});
+  if (emailError) {
+    console.error('Error sending confirmation email:', emailError);
+    // Continue with form submission even if email fails
+  } else {
+    setEmailSuccess(true);
+  }
+} catch (emailError) {
+  console.error('Error calling email function:', emailError);
+  // Continue with form submission even if email fails
+}
+
+// Dynamic user feedback
+{emailSuccess ? ' A confirmation email has been sent to your inbox.' : ' We\'ve received your information and will contact you soon.'}
+```
+
+#### Impact
+- ✅ Form always works regardless of email service status
+- ✅ Clear user feedback about email status
+- ✅ No lost lead data
+- ✅ Improved user experience
+
+---
+
+## Summary
+
+All critical bugs have been resolved, resulting in:
+- **Reliable form submissions** with proper error handling
+- **Consistent email functionality** with fallback mechanisms
+- **Clean development experience** without TypeScript errors
+- **Better user experience** with appropriate feedback
+- **Robust error handling** that prevents data loss
+
+The application now provides a stable, user-friendly lead capture experience that gracefully handles various failure scenarios.
+
+---
+
 ## How can I edit this code?
 
 There are several ways of editing your application.

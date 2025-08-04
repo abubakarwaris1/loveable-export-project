@@ -1,0 +1,12 @@
+{
+  "compilerOptions": {
+    "allowJs": true,
+    "lib": ["deno.window"],
+    "strict": true
+  },
+  "imports": {
+    "https://deno.land/x/xhr@0.1.0/mod.ts": "https://deno.land/x/xhr@0.1.0/mod.ts",
+    "https://deno.land/std@0.190.0/http/server.ts": "https://deno.land/std@0.190.0/http/server.ts",
+    "npm:resend": "npm:resend@2.0.0"
+  }
+} 

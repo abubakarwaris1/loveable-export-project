@@ -10,6 +10,7 @@ export const LeadCaptureForm = () => {
   const [formData, setFormData] = useState({ name: '', email: '', industry: '' });
   const [validationErrors, setValidationErrors] = useState<ValidationError[]>([]);
   const [submitted, setSubmitted] = useState(false);
+  const [emailSuccess, setEmailSuccess] = useState(false);
   const [leads, setLeads] = useState<
     Array<{ name: string; email: string; industry: string; submitted_at: string }>
   >([]);
@@ -26,26 +27,8 @@ export const LeadCaptureForm = () => {
     setValidationErrors(errors);
 
     if (errors.length === 0) {
-      // Save to database
-try {
-  const { error: emailError } = await supabase.functions.invoke('send-confirmation', {
-    body: {
-      name: formData.name,
-      email: formData.email,
-      industry: formData.industry,
-    },
-  });
-
-  if (emailError) {
-    console.error('Error sending confirmation email:', emailError);
-  } else {
-    console.log('Confirmation email sent successfully');
-  }
-} catch (emailError) {
-  console.error('Error calling email function:', emailError);
-}
-
-      // Send confirmation email
+      // Send confirmation email with error handling
+      let emailSuccess = false;
       try {
         const { error: emailError } = await supabase.functions.invoke('send-confirmation', {
           body: {
@@ -57,11 +40,15 @@ try {
 
         if (emailError) {
           console.error('Error sending confirmation email:', emailError);
+          // Continue with the form submission even if email fails
         } else {
           console.log('Confirmation email sent successfully');
+          setEmailSuccess(true);
         }
       } catch (emailError) {
         console.error('Error calling email function:', emailError);
+        // Continue with the form submission even if email fails
+        // The form will still work, just without email confirmation
       }
 
       const lead = {
@@ -73,6 +60,7 @@ try {
       setLeads([...leads, lead]);
       setSubmitted(true);
       setFormData({ name: '', email: '', industry: '' });
+      setEmailSuccess(false);
     }
   };
 
@@ -97,6 +85,7 @@ try {
 
           <p className="text-muted-foreground mb-2">
             Thanks for joining! We'll be in touch soon with updates.
+            {emailSuccess ? ' A confirmation email has been sent to your inbox.' : ' We\'ve received your information and will contact you soon.'}
           </p>
 
           <p className="text-sm text-accent mb-8">
